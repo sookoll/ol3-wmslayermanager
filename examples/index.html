@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>sidebar-v2 example</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://openlayers.org/en/master/css/ol.css" type="text/css">
+        <link rel="stylesheet" href="../src/ol3-wmslayermanager.css" type="text/css">
+        
+        <style>
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            html, body, #map {
+                height: 100%;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="map" class="sidebar-map"></div>
+
+        <script src="https://openlayers.org/en/master/build/ol.js" type="text/javascript"></script>
+        <script src="../src/ol3-wmslayermanager.js"></script>
+
+        <script>
+
+
+            var map = new ol.Map({
+                target: 'map',
+                view: new ol.View({
+                    center: [589932.0, 6528017],
+                    projection: new ol.proj.Projection({
+                        code: 'EPSG:3301',
+                        units: 'm'
+                    }),
+                    zoom: 8
+                })
+            });
+
+            fetch('proxy.php?url='+encodeURIComponent('http://kaart.maaamet.ee/wms/kaart?service=WMS&version=1.3.0&request=GetCapabilities')).then(function(response) {
+                return response.text();
+            }).then(function(text) {
+
+                var c = new ol.control.LayerTreeFromOWS({
+                    capabilities: text,
+                    //layers: ['corfill', 'COR_METS_HALJAS', 'kergliiklustee', 'BAASKAART'],
+                    target: 'profile',
+                    title: 'Kihid',
+                    iconPrefix: 'fa',
+                    collapseIcon: 'fa-minus-circle',
+                    expandIcon: 'fa-plus-circle'
+                });
+
+                map.addControl(c);
+            });
+
+
+
+        </script>
+    </body>
+</html>

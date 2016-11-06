@@ -1,0 +1,33 @@
+div.ol-layermanager {
+    top: .5em;
+    right: .5em;
+}
+div.ol-layermanager > div {
+    background-color: #fff;
+    border-radius: 3px;
+    padding: 4px;
+    width: 200px;
+    max-height: 600px;
+    overflow: scroll;
+}
+div.ol-layermanager > div > label {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+div.ol-layermanager ul {
+    list-style-type: none;
+    padding: 0 0 0 8px;
+    margin: 0 0 4px 0;
+}
+
+div.ol-layermanager > div > ul {
+    padding: 0;
+}
+
+div.ol-layermanager li.collapsed > ul {
+    display: none
+}
+
+div.ol-layermanager i, input {
+    margin-right: 6px
+}
