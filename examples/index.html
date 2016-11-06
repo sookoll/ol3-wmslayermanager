@@ -46,8 +46,7 @@
             fetch('proxy.php?url='+encodeURIComponent('http://kaart.maaamet.ee/wms/kaart?service=WMS&version=1.3.0&request=GetCapabilities')).then(function(response) {
                 return response.text();
             }).then(function(text) {
-
-                var c = new ol.control.LayerTreeFromOWS({
+                var c = new ol.control.WMSLayerManager({
                     capabilities: text,
                     //layers: ['corfill', 'COR_METS_HALJAS', 'kergliiklustee', 'BAASKAART'],
                     target: 'profile',

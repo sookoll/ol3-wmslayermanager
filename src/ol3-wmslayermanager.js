@@ -1,9 +1,9 @@
 /**
- * LayerTreeFromOWS
+ * WMSLayerManager
  * @param opt_options
  * @constructor
  */
-ol.control.LayerTreeFromOWS = function(opt_options) {
+ol.control.WMSLayerManager = function(opt_options) {
 
     var options = {
         singlelayer: true,// currently works only single layer
@@ -37,13 +37,13 @@ ol.control.LayerTreeFromOWS = function(opt_options) {
     });
 };
 
-ol.inherits(ol.control.LayerTreeFromOWS, ol.control.Control);
+ol.inherits(ol.control.WMSLayerManager, ol.control.Control);
 
 /**
  * Set the map instance the control is associated with.
  * @param {ol.Map} map The map instance.
  */
-ol.control.LayerTreeFromOWS.prototype.setMap = function(map) {
+ol.control.WMSLayerManager.prototype.setMap = function(map) {
     ol.control.Control.prototype.setMap.call(this, map);
     var capabilities = this.handleCapabilities(this.options.capabilities);
     if (capabilities) {
@@ -51,17 +51,36 @@ ol.control.LayerTreeFromOWS.prototype.setMap = function(map) {
         this.layers.push(this.createLayer());
         map.addLayer(this.layers[0]);
         this.renderCall();
+        // min, max zoom
+        this.setChkbxZoom(map.getView().getResolution());
         map.getView().on('change:resolution', function(e){
+            // min, max zoom
+            this.setChkbxZoom(e.target.getResolution());
             if (this.rerenderLayer) {
                 var source = this.layers[0].getSource();
                 source.setTileLoadFunction(source.getTileLoadFunction());
                 this.rerenderLayer = false;
             }
         }, this);
+        
     }
 };
 
-ol.control.LayerTreeFromOWS.prototype.handleCapabilities = function(doc) {
+ol.control.WMSLayerManager.prototype.setChkbxZoom = function (res) {
+    var scale = (96/(2.54/100))*res,
+        inputs = Array.prototype.slice.call(this.el.querySelectorAll('input[type=checkbox]'));
+    inputs.forEach(function (item) {
+        var min = item.getAttribute('minscale'),
+            max = item.getAttribute('maxscale');
+        if ((max && max < scale) || (min && min > scale)) {
+            item.disabled = true;
+        } else {
+            item.disabled = false;
+        }
+    });
+};
+
+ol.control.WMSLayerManager.prototype.handleCapabilities = function(doc) {
     var result = this.parser.read(doc);
     if (this.isValid(result)) {
         // set capabilities
@@ -73,7 +92,7 @@ ol.control.LayerTreeFromOWS.prototype.handleCapabilities = function(doc) {
     }
 };
 
-ol.control.LayerTreeFromOWS.prototype.isValid = function(capabilities) {
+ol.control.WMSLayerManager.prototype.isValid = function(capabilities) {
     return capabilities.Service &&
         capabilities.Service.Name &&
         capabilities.Service.Name === 'WMS' &&
@@ -81,7 +100,7 @@ ol.control.LayerTreeFromOWS.prototype.isValid = function(capabilities) {
         capabilities.Capability.Layer;
 };
 
-ol.control.LayerTreeFromOWS.prototype.renderCall = function() {
+ol.control.WMSLayerManager.prototype.renderCall = function() {
     while(this.el.firstChild) {
         this.el.removeChild(this.el.firstChild);
     }
@@ -96,7 +115,7 @@ ol.control.LayerTreeFromOWS.prototype.renderCall = function() {
     
 };
 
-ol.control.LayerTreeFromOWS.prototype.iterateLayers = function(lyr, el, depth, test) {
+ol.control.WMSLayerManager.prototype.iterateLayers = function(lyr, el, depth, test) {
     var item, ul,
         this_= this,
         next = depth,
@@ -132,7 +151,7 @@ ol.control.LayerTreeFromOWS.prototype.iterateLayers = function(lyr, el, depth, t
     }
 };
 
-ol.control.LayerTreeFromOWS.prototype.formatItem = function(lyr, depth) {
+ol.control.WMSLayerManager.prototype.formatItem = function(lyr, depth) {
     var li = document.createElement('li'),
         label = document.createElement('label'),
         _this = this,
@@ -154,6 +173,8 @@ ol.control.LayerTreeFromOWS.prototype.formatItem = function(lyr, depth) {
         checkbox = document.createElement('input');
         checkbox.type = "checkbox";
         checkbox.name = lyr.Name;
+        checkbox.setAttribute("minscale", (lyr.MinScaleDenominator || null));
+        checkbox.setAttribute("maxscale", (lyr.MaxScaleDenominator || null));
         checkbox.onclick = function(e) {_this.handleCheckboxChange(e)};
         label.appendChild(checkbox);
     }
@@ -162,7 +183,7 @@ ol.control.LayerTreeFromOWS.prototype.formatItem = function(lyr, depth) {
     return li;
 };
 
-ol.control.LayerTreeFromOWS.prototype.getServiceMetaData = function(capability) {
+ol.control.WMSLayerManager.prototype.getServiceMetaData = function(capability) {
     var meta = {
         url: null,
         format: null,
@@ -183,24 +204,24 @@ ol.control.LayerTreeFromOWS.prototype.getServiceMetaData = function(capability) 
     return meta;
 };
 
-ol.control.LayerTreeFromOWS.prototype.createLayer = function() {
+ol.control.WMSLayerManager.prototype.createLayer = function() {
     return new ol.layer.Tile({
         visible: false,
         source: new ol.source.TileWMS({
             url: this.metadata.url,
             params: {
                 'TILED': true,
-                'VERSION': '1.1.1',// this.metadata.version,// do not work!
+                'VERSION': '1.1.1',
+                //'VERSION': this.metadata.version,
                 'LAYERS': null,
                 'FORMAT': this.metadata.format[0]
             },
-            serverType: 'mapserver',
-            gutter: 20
+            serverType: 'mapserver'
         })
     });
 };
 
-ol.control.LayerTreeFromOWS.prototype.handleCheckboxChange = function(e) {
+ol.control.WMSLayerManager.prototype.handleCheckboxChange = function(e) {
     var layerName = e.target.name,
         visible = e.target.checked,
         layers = this.layerList;
@@ -214,7 +235,7 @@ ol.control.LayerTreeFromOWS.prototype.handleCheckboxChange = function(e) {
     this.updateLayer(this.layers[0], layers);
 };
 
-ol.control.LayerTreeFromOWS.prototype.updateLayer = function(lyr, list) {
+ol.control.WMSLayerManager.prototype.updateLayer = function(lyr, list) {
     if (list.length > 0) {
         var source = lyr.getSource(),
             inputs;
@@ -232,7 +253,7 @@ ol.control.LayerTreeFromOWS.prototype.updateLayer = function(lyr, list) {
     }
 };
 
-ol.control.LayerTreeFromOWS.prototype.toggleGroup = function(e) {
+ol.control.WMSLayerManager.prototype.toggleGroup = function(e) {
     var i = e.currentTarget.querySelector('i'),
         li = e.currentTarget.parentNode;
     if (i && li) {
